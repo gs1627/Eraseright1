@@ -1,0 +1,38 @@
+POLICY 1: CUSTOMER CONTACT DATA
+
+Customer email addresses and phone numbers should be
+deleted when a verified erasure request is approved,
+unless a documented legal retention requirement applies.
+
+POLICY 2: SHIPPING INFORMATION
+
+Shipping addresses should be deleted after fulfilment
+when they are no longer required for an active order
+or documented legal obligation.
+
+POLICY 3: FINANCIAL RECORDS
+
+Invoices and transaction records may need to be retained
+for the applicable statutory retention period.
+Such records must not be automatically deleted.
+Where possible, unnecessary personal information should
+be anonymised while preserving required financial details.
+
+POLICY 4: SUPPORT RECORDS
+
+Support tickets should only be processed when the
+requester's identity and ownership of the record
+have been sufficiently verified.
+
+Uncertain identity matches must be sent for human review.
+
+POLICY 5: HUMAN APPROVAL
+
+All proposed erasure and anonymisation actions must
+be reviewed and approved before execution.
+
+POLICY 6: VERIFICATION
+
+After execution, the system must search the relevant
+data stores again and record whether each approved
+operation succeeded.

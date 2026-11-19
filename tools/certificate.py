@@ -1,0 +1,225 @@
+
+from io import BytesIO
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
+
+
+def generate_certificate(
+    request_id,
+    requester_name,
+    requester_email,
+    customer_id,
+    request_type,
+    decisions,
+    execution_results,
+    verification_results
+):
+
+    buffer = BytesIO()
+
+    document = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=18 * mm,
+        leftMargin=18 * mm,
+        topMargin=18 * mm,
+        bottomMargin=18 * mm
+    )
+
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "CertificateTitle",
+        parent=styles["Title"],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor("#17365D"),
+        fontSize=22,
+        spaceAfter=8
+    )
+
+    subtitle_style = ParagraphStyle(
+        "Subtitle",
+        parent=styles["Normal"],
+        alignment=TA_CENTER,
+        textColor=colors.HexColor("#555555"),
+        fontSize=10,
+        spaceAfter=20
+    )
+
+    heading_style = ParagraphStyle(
+        "SectionHeading",
+        parent=styles["Heading2"],
+        textColor=colors.HexColor("#17365D"),
+        fontSize=13,
+        spaceBefore=12,
+        spaceAfter=8
+    )
+
+    story = []
+
+    now = datetime.now(
+        ZoneInfo("Asia/Kolkata")
+    ).strftime("%d %B %Y, %I:%M %p IST")
+
+    story.append(
+        Paragraph("EraseRight", title_style)
+    )
+
+    story.append(
+        Paragraph(
+            "DATA SUBJECT REQUEST PROCESSING CERTIFICATE",
+            subtitle_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "This document summarizes the processing of a privacy "
+            "request within the EraseRight demonstration system.",
+            styles["BodyText"]
+        )
+    )
+
+    story.append(Spacer(1, 12))
+
+    story.append(
+        Paragraph("Request Details", heading_style)
+    )
+
+    request_data = [
+        ["Request ID", request_id],
+        ["Requester", requester_name],
+        ["Email", requester_email],
+        ["Customer ID", customer_id],
+        ["Request Type", request_type],
+        ["Processed At", now]
+    ]
+
+    request_table = Table(
+        request_data,
+        colWidths=[42 * mm, 125 * mm]
+    )
+
+    request_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1),
+         colors.HexColor("#E8EEF7")),
+        ("TEXTCOLOR", (0, 0), (0, -1),
+         colors.HexColor("#17365D")),
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 8)
+    ]))
+
+    story.append(request_table)
+
+    story.append(
+        Paragraph("Processing Summary", heading_style)
+    )
+
+    execution_map = {
+        item["record_id"]: item
+        for item in execution_results
+    }
+
+    verification_map = {
+        item["record_id"]: item
+        for item in verification_results
+    }
+
+    table_data = [[
+        "Record ID",
+        "Data Type",
+        "Action",
+        "Approval",
+        "Execution",
+        "Verification"
+    ]]
+
+    for decision in decisions:
+
+        record_id = decision["record_id"]
+
+        execution = execution_map.get(record_id, {})
+        verification = verification_map.get(record_id, {})
+
+        table_data.append([
+            str(record_id),
+            str(decision.get("data_type", "-")),
+            str(decision.get("action", "-")),
+            str(decision.get("approval_status", "-")),
+            str(execution.get("status", "NOT EXECUTED")),
+            str(verification.get("verification", "NOT APPLICABLE"))
+        ])
+
+    processing_table = Table(
+        table_data,
+        repeatRows=1,
+        colWidths=[
+            17 * mm,
+            29 * mm,
+            23 * mm,
+            25 * mm,
+            31 * mm,
+            36 * mm
+        ]
+    )
+
+    processing_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0),
+         colors.HexColor("#17365D")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("PADDING", (0, 0), (-1, -1), 6)
+    ]))
+
+    story.append(processing_table)
+
+    story.append(
+        Paragraph("Important Information", heading_style)
+    )
+
+    story.append(
+        Paragraph(
+            "This certificate is a processing summary generated by "
+            "the EraseRight prototype. It records the decisions, "
+            "approvals, execution outcomes and verification results "
+            "available to the system. It is not an independent audit "
+            "or proof of legal compliance.",
+            styles["BodyText"]
+        )
+    )
+
+    story.append(Spacer(1, 20))
+
+    story.append(
+        Paragraph(
+            "Generated by EraseRight | Intelligent Data Subject "
+            "Request Fulfilment System",
+            subtitle_style
+        )
+    )
+
+    document.build(story)
+
+    buffer.seek(0)
+
+    return buffer.getvalue()
